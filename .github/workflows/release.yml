@@ -1,0 +1,137 @@
+name: 🚀 Build & Release APK
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # Triggers on version tags like v1.0.0, v1.2.3
+
+  workflow_dispatch:  # Allow manual trigger from GitHub Actions UI
+
+env:
+  DISCORD_WEBHOOK: https://discord.com/api/webhooks/1392378414526103593/0cCpbWiPo62o26qLAHZZGJsf0Sjlw0bJATqEJ55xurVcW5fDfS18QtKmU-GXIFkBPfCB
+
+jobs:
+  build:
+    name: 🔨 Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Notify Discord: Build Started ─────────────────────────────────
+      - name: 📣 Discord — Build Started
+        run: |
+          curl -s -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🔨 Build Started",
+                "description": "A new APK build has been triggered for **Telegram Drive Mobile**.",
+                "color": 3447003,
+                "fields": [
+                  { "name": "🏷️ Tag", "value": "${{ github.ref_name }}", "inline": true },
+                  { "name": "👤 Author", "value": "${{ github.actor }}", "inline": true },
+                  { "name": "📦 Commit", "value": "`${{ github.sha }}`", "inline": false }
+                ],
+                "footer": { "text": "Telegram Drive Mobile CI/CD" },
+                "timestamp": "${{ github.event.head_commit.timestamp }}"
+              }]
+            }'
+
+      # ── 2. Checkout code ──────────────────────────────────────────────────
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      # ── 3. Setup Node.js ──────────────────────────────────────────────────
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: mobile-app/package-lock.json
+
+      # ── 4. Install dependencies ───────────────────────────────────────────
+      - name: 📦 Install Dependencies
+        working-directory: mobile-app
+        run: npm ci
+
+      # ── 5. Setup Expo + EAS ───────────────────────────────────────────────
+      - name: ⚙️ Setup EAS CLI
+        run: npm install -g eas-cli
+
+      - name: 🔑 Authenticate with Expo
+        run: eas whoami
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # ── 6. Build APK ──────────────────────────────────────────────────────
+      - name: 🏗️ Build Android APK
+        working-directory: mobile-app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --output ../telegram-drive-${{ github.ref_name }}.apk
+
+      # ── 7. Upload APK as GitHub Release Asset ────────────────────────────
+      - name: 📤 Upload APK to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: telegram-drive-${{ github.ref_name }}.apk
+          name: Telegram Drive Mobile ${{ github.ref_name }}
+          body: |
+            ## 📱 Telegram Drive Mobile ${{ github.ref_name }}
+
+            **Built automatically by GitHub Actions.**
+
+            ### 📥 Installation
+            1. Download the APK below
+            2. Enable "Install from unknown sources" on your Android device
+            3. Open the APK and install
+
+            ### 👤 Author
+            Built & maintained by [0xJhinkz](https://github.com/0xJhinkz)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 8. Notify Discord: Build Success ─────────────────────────────────
+      - name: ✅ Discord — Build Success
+        if: success()
+        run: |
+          curl -s -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "✅ Build Successful!",
+                "description": "**Telegram Drive Mobile** `${{ github.ref_name }}` has been built and released successfully! 🎉",
+                "color": 3066993,
+                "fields": [
+                  { "name": "📥 Download APK", "value": "[Click here to download](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})", "inline": false },
+                  { "name": "🏷️ Tag", "value": "${{ github.ref_name }}", "inline": true },
+                  { "name": "👤 Author", "value": "${{ github.actor }}", "inline": true }
+                ],
+                "footer": { "text": "Telegram Drive Mobile CI/CD · 0xJhinkz" },
+                "timestamp": "${{ github.event.head_commit.timestamp }}"
+              }]
+            }'
+
+      # ── 9. Notify Discord: Build Failed ──────────────────────────────────
+      - name: ❌ Discord — Build Failed
+        if: failure()
+        run: |
+          curl -s -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Build Failed!",
+                "description": "The APK build for **Telegram Drive Mobile** `${{ github.ref_name }}` has failed. Check the logs for details.",
+                "color": 15158332,
+                "fields": [
+                  { "name": "🔍 View Logs", "value": "[GitHub Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false },
+                  { "name": "🏷️ Tag", "value": "${{ github.ref_name }}", "inline": true },
+                  { "name": "👤 Triggered By", "value": "${{ github.actor }}", "inline": true }
+                ],
+                "footer": { "text": "Telegram Drive Mobile CI/CD · 0xJhinkz" }
+              }]
+            }'

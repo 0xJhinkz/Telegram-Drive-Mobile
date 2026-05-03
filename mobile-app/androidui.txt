@@ -1,0 +1,140 @@
+```jsx
+// App.js
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+const mockFiles = [
+  { id: "1", name: "Work", type: "folder" },
+  { id: "2", name: "Movies", type: "folder" },
+  { id: "3", name: "photo1.jpg", type: "image" },
+  { id: "4", name: "document.pdf", type: "file" },
+];
+
+export default function App() {
+  const [view, setView] = useState("list");
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity style={styles.item}>
+      <Ionicons
+        name={
+          item.type === "folder"
+            ? "folder"
+            : item.type === "image"
+            ? "image"
+            : "document"
+        }
+        size={28}
+        color="#4A90E2"
+      />
+      <Text style={styles.text}>{item.name}</Text>
+      <Ionicons name="ellipsis-vertical" size={20} color="#888" />
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>My Drive</Text>
+        <Ionicons name="search" size={24} />
+      </View>
+
+      {/* File List */}
+      <FlatList
+        data={mockFiles}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+      />
+
+      {/* Floating Upload Button */}
+      <TouchableOpacity style={styles.fab}>
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Bottom Navigation */}
+      <View style={styles.nav}>
+        <NavItem icon="folder" label="Files" />
+        <NavItem icon="cloud-upload" label="Upload" />
+        <NavItem icon="search" label="Search" />
+        <NavItem icon="settings" label="Settings" />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const NavItem = ({ icon, label }) => (
+  <TouchableOpacity style={styles.navItem}>
+    <Ionicons name={icon} size={22} color="#444" />
+    <Text style={styles.navText}>{label}</Text>
+  </TouchableOpacity>
+);
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 16,
+  },
+
+  title: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderBottomWidth: 0.5,
+    borderColor: "#ddd",
+    justifyContent: "space-between",
+  },
+
+  text: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 16,
+  },
+
+  fab: {
+    position: "absolute",
+    bottom: 80,
+    right: 20,
+    backgroundColor: "#4A90E2",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+  },
+
+  nav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    padding: 10,
+    borderTopWidth: 0.5,
+    borderColor: "#ddd",
+    backgroundColor: "#fff",
+  },
+
+  navItem: {
+    alignItems: "center",
+  },
+
+  navText: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+});
+```

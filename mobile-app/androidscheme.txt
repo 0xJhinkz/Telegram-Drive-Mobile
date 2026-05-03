@@ -1,0 +1,171 @@
+```json
+{
+  "app": {
+    "name": "Telegram Drive Mobile",
+    "version": "1.0.0",
+    "platform": ["android", "ios"],
+    "ui_framework": "react_native_expo"
+  },
+
+  "theme": {
+    "primary_color": "#4A90E2",
+    "background_color": "#FFFFFF",
+    "text_color": "#000000",
+    "secondary_text": "#888888",
+    "border_color": "#DDDDDD"
+  },
+
+  "navigation": {
+    "type": "bottom_tabs",
+    "tabs": [
+      {
+        "name": "Files",
+        "icon": "folder",
+        "screen": "FilesScreen"
+      },
+      {
+        "name": "Upload",
+        "icon": "cloud-upload",
+        "screen": "UploadScreen"
+      },
+      {
+        "name": "Search",
+        "icon": "search",
+        "screen": "SearchScreen"
+      },
+      {
+        "name": "Settings",
+        "icon": "settings",
+        "screen": "SettingsScreen"
+      }
+    ]
+  },
+
+  "screens": {
+    "FilesScreen": {
+      "type": "file_explorer",
+      "header": {
+        "title": "My Drive",
+        "actions": ["search", "toggle_view"]
+      },
+      "views": ["list", "grid"],
+      "data_source": "telegram_channels",
+      "item_layout": {
+        "icon": true,
+        "filename": true,
+        "size": true,
+        "menu": ["download", "share", "rename", "delete"]
+      },
+      "floating_button": {
+        "icon": "add",
+        "action": "open_upload_options"
+      }
+    },
+
+    "UploadScreen": {
+      "type": "action_sheet",
+      "options": [
+        {
+          "label": "Upload File",
+          "icon": "document",
+          "action": "pick_file"
+        },
+        {
+          "label": "Camera",
+          "icon": "camera",
+          "action": "open_camera"
+        },
+        {
+          "label": "Gallery",
+          "icon": "image",
+          "action": "open_gallery"
+        },
+        {
+          "label": "Document",
+          "icon": "folder",
+          "action": "pick_document"
+        }
+      ]
+    },
+
+    "SearchScreen": {
+      "type": "search",
+      "filters": ["images", "videos", "documents"],
+      "search_fields": ["filename", "type"],
+      "result_layout": "list"
+    },
+
+    "SettingsScreen": {
+      "type": "settings",
+      "sections": [
+        {
+          "title": "Account",
+          "items": ["login", "logout"]
+        },
+        {
+          "title": "Storage",
+          "items": ["used_space", "clear_cache"]
+        },
+        {
+          "title": "About",
+          "items": ["app_version"]
+        }
+      ]
+    },
+
+    "FileViewerScreen": {
+      "type": "media_viewer",
+      "features": [
+        "swipe_navigation",
+        "pinch_zoom",
+        "video_streaming"
+      ]
+    }
+  },
+
+  "data_model": {
+    "file": {
+      "id": "string",
+      "name": "string",
+      "type": "folder | image | video | document",
+      "size": "number",
+      "telegram_message_id": "string",
+      "channel_id": "string",
+      "url": "string"
+    }
+  },
+
+  "api": {
+    "provider": "telegram",
+    "methods": [
+      "upload_file",
+      "download_file",
+      "list_files",
+      "search_files",
+      "delete_file"
+    ],
+    "library_options": ["gramjs", "tdlib"]
+  },
+
+  "state_management": {
+    "files": [],
+    "current_folder": "root",
+    "view_mode": "list",
+    "search_query": ""
+  },
+
+  "performance": {
+    "lazy_loading": true,
+    "pagination": true,
+    "max_items_per_load": 50
+  },
+
+  "future_features": [
+    "offline_mode",
+    "file_encryption",
+    "multi-account_support",
+    "shared_links",
+    "background_upload"
+  ]
+}
+```

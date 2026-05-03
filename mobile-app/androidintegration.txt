@@ -1,0 +1,120 @@
+```json
+{
+  "telegram_integration": {
+    "protocol": "MTProto",
+    "library": "gramjs",
+    "auth": {
+      "api_id": "YOUR_API_ID",
+      "api_hash": "YOUR_API_HASH",
+      "session": "stored_locally"
+    },
+
+    "connection": {
+      "type": "user_account",
+      "endpoint": "https://my.telegram.org",
+      "stores_data_locally": true
+    },
+
+    "storage_mapping": {
+      "root": "saved_messages",
+      "folders": "private_channels",
+      "files": "channel_messages_with_media"
+    },
+
+    "file_limits": {
+      "max_size_free": "2GB",
+      "max_size_premium": "4GB"
+    },
+
+    "features": {
+      "upload": {
+        "method": "client.sendFile",
+        "chunked": true,
+        "progress_tracking": true
+      },
+
+      "download": {
+        "method": "client.downloadMedia",
+        "streaming": true,
+        "cache": true
+      },
+
+      "list_files": {
+        "method": "client.getMessages",
+        "filter": "media_only"
+      },
+
+      "create_folder": {
+        "method": "client.createChannel",
+        "type": "private"
+      },
+
+      "delete_file": {
+        "method": "client.deleteMessages"
+      }
+    }
+  },
+
+  "mobile_logic": {
+    "folder_navigation": {
+      "root": "Saved Messages",
+      "channel_as_folder": true,
+      "breadcrumb": true
+    },
+
+    "file_display": {
+      "source": "telegram_messages",
+      "transform": {
+        "message_id": "file_id",
+        "media": "file_url",
+        "caption": "filename"
+      }
+    },
+
+    "upload_flow": [
+      "pick_file",
+      "compress_if_needed",
+      "send_to_selected_channel",
+      "store_message_id"
+    ],
+
+    "download_flow": [
+      "select_file",
+      "fetch_message",
+      "download_media",
+      "save_to_device"
+    ]
+  },
+
+  "react_native_example": {
+    "install": [
+      "npm install telegram",
+      "npm install react-native-get-random-values"
+    ],
+
+    "code": {
+      "init_client": "const client = new TelegramClient(session, apiId, apiHash, { connectionRetries: 5 });",
+
+      "login": "await client.start({ phoneNumber, password, phoneCode });",
+
+      "upload": "await client.sendFile(channel, { file: filePath });",
+
+      "get_files": "await client.getMessages(channel, { limit: 50 });",
+
+      "download": "await client.downloadMedia(message);"
+    }
+  },
+
+  "security": {
+    "note": "no end-to-end encryption for cloud chats",
+    "storage": "telegram_servers",
+    "local_cache": true
+  },
+
+  "limitations": [
+    "no official mobile support",
+    "rate limiting on heavy uploads",
+    "telegram ui fallback needed"
+  ]
+}
+```

@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Telegram Drive Mobile",
+    "slug": "telegram-drive-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "assetBundlePatterns": ["**/*"],
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "android": {},
+    "ios": {},
+    "extra": {
+      "eas": {}
+    }
+  }
+}
