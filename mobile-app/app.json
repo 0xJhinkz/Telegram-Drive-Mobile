@@ -9,8 +9,12 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "android": {},
-    "ios": {},
+    "android": {
+      "package": "com.jhinkz.telegramdrive"
+    },
+    "ios": {
+      "bundleIdentifier": "com.jhinkz.telegramdrive"
+    },
     "extra": {
       "eas": {}
     }
