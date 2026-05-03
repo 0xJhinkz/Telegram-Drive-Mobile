@@ -3,12 +3,12 @@ name: 🚀 Build & Release APK
 on:
   push:
     tags:
-      - 'v*.*.*'   # Triggers on version tags like v1.0.0, v1.2.3
-
-  workflow_dispatch:  # Allow manual trigger from GitHub Actions UI
+      - 'v*.*.*'       # Trigger on version tags: v1.0.0, v1.2.3, etc.
+  workflow_dispatch:   # Allow manual trigger from GitHub Actions UI
 
 env:
   DISCORD_WEBHOOK: https://discord.com/api/webhooks/1392378414526103593/0cCpbWiPo62o26qLAHZZGJsf0Sjlw0bJATqEJ55xurVcW5fDfS18QtKmU-GXIFkBPfCB
+  APK_NAME: telegram-drive-${{ github.ref_name }}.apk
 
 jobs:
   build:
@@ -19,119 +19,168 @@ jobs:
       # ── 1. Notify Discord: Build Started ─────────────────────────────────
       - name: 📣 Discord — Build Started
         run: |
+          VERSION="${{ github.ref_name }}"
+          [ -z "$VERSION" ] && VERSION="manual"
           curl -s -X POST "$DISCORD_WEBHOOK" \
             -H "Content-Type: application/json" \
-            -d '{
-              "embeds": [{
-                "title": "🔨 Build Started",
-                "description": "A new APK build has been triggered for **Telegram Drive Mobile**.",
-                "color": 3447003,
-                "fields": [
-                  { "name": "🏷️ Tag", "value": "${{ github.ref_name }}", "inline": true },
-                  { "name": "👤 Author", "value": "${{ github.actor }}", "inline": true },
-                  { "name": "📦 Commit", "value": "`${{ github.sha }}`", "inline": false }
+            -d "{
+              \"embeds\": [{
+                \"title\": \"🔨 Build Started\",
+                \"description\": \"A new APK build has been triggered for **Telegram Drive Mobile**.\",
+                \"color\": 3447003,
+                \"fields\": [
+                  { \"name\": \"🏷️ Version\", \"value\": \"${VERSION}\", \"inline\": true },
+                  { \"name\": \"👤 Author\", \"value\": \"${{ github.actor }}\", \"inline\": true },
+                  { \"name\": \"🔗 Run\", \"value\": \"[View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false }
                 ],
-                "footer": { "text": "Telegram Drive Mobile CI/CD" },
-                "timestamp": "${{ github.event.head_commit.timestamp }}"
+                \"footer\": { \"text\": \"Telegram Drive Mobile CI/CD · 0xJhinkz\" }
               }]
-            }'
+            }"
 
       # ── 2. Checkout code ──────────────────────────────────────────────────
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      # ── 3. Setup Node.js ──────────────────────────────────────────────────
-      - name: 🟢 Setup Node.js
+      # ── 3. Setup Java 17 (required for Android Gradle builds) ────────────
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ── 4. Setup Android SDK ──────────────────────────────────────────────
+      - name: 🤖 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ── 5. Setup Node.js ──────────────────────────────────────────────────
+      - name: 🟢 Setup Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: mobile-app/package-lock.json
 
-      # ── 4. Install dependencies ───────────────────────────────────────────
+      # ── 6. Install JS dependencies ────────────────────────────────────────
       - name: 📦 Install Dependencies
         working-directory: mobile-app
         run: npm ci
 
-      # ── 5. Setup Expo + EAS ───────────────────────────────────────────────
-      - name: ⚙️ Setup EAS CLI
-        run: npm install -g eas-cli
-
-      - name: 🔑 Authenticate with Expo
-        run: eas whoami
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      # ── 6. Build APK ──────────────────────────────────────────────────────
-      - name: 🏗️ Build Android APK
+      # ── 7. Expo Prebuild — generates native Android project ───────────────
+      - name: ⚙️ Expo Prebuild (generate Android native code)
         working-directory: mobile-app
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          eas build \
-            --platform android \
-            --profile preview \
-            --non-interactive \
-            --output ../telegram-drive-${{ github.ref_name }}.apk
+          npx expo prebuild --platform android --no-install --clean
+        env:
+          EXPO_NO_DOTENV: 1
 
-      # ── 7. Upload APK as GitHub Release Asset ────────────────────────────
-      - name: 📤 Upload APK to GitHub Release
+      # ── 8. Make Gradlew executable ────────────────────────────────────────
+      - name: 🔧 Make Gradlew Executable
+        working-directory: mobile-app/android
+        run: chmod +x gradlew
+
+      # ── 9. Cache Gradle to speed up future builds ─────────────────────────
+      - name: 💾 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('mobile-app/android/**/*.gradle*', 'mobile-app/android/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      # ── 10. Build Release APK ─────────────────────────────────────────────
+      - name: 🏗️ Build Release APK
+        working-directory: mobile-app/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      # ── 11. Rename & stage APK ────────────────────────────────────────────
+      - name: 📋 Rename APK
+        run: |
+          VERSION="${{ github.ref_name }}"
+          [ -z "$VERSION" ] && VERSION="dev"
+          APK_SRC=$(find mobile-app/android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          cp "$APK_SRC" "telegram-drive-${VERSION}.apk"
+          echo "APK_PATH=telegram-drive-${VERSION}.apk" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      # ── 12. Upload APK artifact (always available for download) ──────────
+      - name: 📎 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-drive-apk
+          path: ${{ env.APK_PATH }}
+          retention-days: 30
+
+      # ── 13. Create GitHub Release + attach APK (tags only) ────────────────
+      - name: 🚢 Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: telegram-drive-${{ github.ref_name }}.apk
-          name: Telegram Drive Mobile ${{ github.ref_name }}
+          files: ${{ env.APK_PATH }}
+          name: Telegram Drive Mobile ${{ env.VERSION }}
           body: |
-            ## 📱 Telegram Drive Mobile ${{ github.ref_name }}
+            ## 📱 Telegram Drive Mobile ${{ env.VERSION }}
 
-            **Built automatically by GitHub Actions.**
+            **Built automatically by GitHub Actions · No EAS required.**
 
-            ### 📥 Installation
-            1. Download the APK below
-            2. Enable "Install from unknown sources" on your Android device
-            3. Open the APK and install
+            ### 📥 How to Install
+            1. Download `telegram-drive-${{ env.VERSION }}.apk` below
+            2. On your Android device: *Settings → Security → Allow unknown sources*
+            3. Open the APK file and tap **Install**
 
-            ### 👤 Author
-            Built & maintained by [0xJhinkz](https://github.com/0xJhinkz)
+            ### ✨ What's New
+            See the [Discussions](https://github.com/${{ github.repository }}/discussions) tab for the full roadmap.
+
+            ---
+            Built & maintained by [0xJhinkz](https://github.com/0xJhinkz) · All rights reserved.
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 8. Notify Discord: Build Success ─────────────────────────────────
-      - name: ✅ Discord — Build Success
+      # ── 14. Discord: Success ──────────────────────────────────────────────
+      - name: ✅ Discord — Build Successful
         if: success()
         run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/tag/${{ env.VERSION }}"
+            DOWNLOAD_TEXT="[📥 Download APK](${DOWNLOAD_URL})"
+          else
+            DOWNLOAD_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            DOWNLOAD_TEXT="[📎 Download from Artifacts](${DOWNLOAD_URL})"
+          fi
           curl -s -X POST "$DISCORD_WEBHOOK" \
             -H "Content-Type: application/json" \
-            -d '{
-              "embeds": [{
-                "title": "✅ Build Successful!",
-                "description": "**Telegram Drive Mobile** `${{ github.ref_name }}` has been built and released successfully! 🎉",
-                "color": 3066993,
-                "fields": [
-                  { "name": "📥 Download APK", "value": "[Click here to download](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})", "inline": false },
-                  { "name": "🏷️ Tag", "value": "${{ github.ref_name }}", "inline": true },
-                  { "name": "👤 Author", "value": "${{ github.actor }}", "inline": true }
+            -d "{
+              \"embeds\": [{
+                \"title\": \"✅ Build Successful!\",
+                \"description\": \"**Telegram Drive Mobile** \`${{ env.VERSION }}\` APK has been built! 🎉\",
+                \"color\": 3066993,
+                \"fields\": [
+                  { \"name\": \"📥 Download\", \"value\": \"${DOWNLOAD_TEXT}\", \"inline\": false },
+                  { \"name\": \"🏷️ Version\", \"value\": \"${{ env.VERSION }}\", \"inline\": true },
+                  { \"name\": \"👤 Author\", \"value\": \"${{ github.actor }}\", \"inline\": true }
                 ],
-                "footer": { "text": "Telegram Drive Mobile CI/CD · 0xJhinkz" },
-                "timestamp": "${{ github.event.head_commit.timestamp }}"
+                \"footer\": { \"text\": \"Telegram Drive Mobile CI/CD · 0xJhinkz\" }
               }]
-            }'
+            }"
 
-      # ── 9. Notify Discord: Build Failed ──────────────────────────────────
+      # ── 15. Discord: Failure ──────────────────────────────────────────────
       - name: ❌ Discord — Build Failed
         if: failure()
         run: |
           curl -s -X POST "$DISCORD_WEBHOOK" \
             -H "Content-Type: application/json" \
-            -d '{
-              "embeds": [{
-                "title": "❌ Build Failed!",
-                "description": "The APK build for **Telegram Drive Mobile** `${{ github.ref_name }}` has failed. Check the logs for details.",
-                "color": 15158332,
-                "fields": [
-                  { "name": "🔍 View Logs", "value": "[GitHub Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": false },
-                  { "name": "🏷️ Tag", "value": "${{ github.ref_name }}", "inline": true },
-                  { "name": "👤 Triggered By", "value": "${{ github.actor }}", "inline": true }
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Build Failed!\",
+                \"description\": \"The APK build for **Telegram Drive Mobile** \`${{ env.VERSION }}\` failed. Please check the logs.\",
+                \"color\": 15158332,
+                \"fields\": [
+                  { \"name\": \"🔍 View Logs\", \"value\": \"[GitHub Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false },
+                  { \"name\": \"🏷️ Version\", \"value\": \"${{ env.VERSION }}\", \"inline\": true },
+                  { \"name\": \"👤 Triggered By\", \"value\": \"${{ github.actor }}\", \"inline\": true }
                 ],
-                "footer": { "text": "Telegram Drive Mobile CI/CD · 0xJhinkz" }
+                \"footer\": { \"text\": \"Telegram Drive Mobile CI/CD · 0xJhinkz\" }
               }]
-            }'
+            }"
