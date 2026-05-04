@@ -1,28 +1,36 @@
 /**
- * polyfills.js
- * Uses require() NOT import — require is synchronous and sequential.
- * With ES import, all statements are hoisted, so global.Buffer = Buffer
- * runs AFTER every imported module has already evaluated — too late for gramjs.
+ * polyfills.js - DEBUG VERSION
+ * Console logs will appear in ADB logcat (tag: ReactNativeJS)
  */
+console.log('[Polyfills] Starting...');
 
-// ── 1. Buffer — MUST be first ────────────────────────────────────────────────
+// ── 1. Buffer ────────────────────────────────────────────────────────────────
+console.log('[Polyfills] Requiring buffer...');
 const { Buffer } = require('buffer');
 global.Buffer = Buffer;
+console.log('[Polyfills] Buffer OK:', typeof global.Buffer);
 
 // ── 2. process ───────────────────────────────────────────────────────────────
-const { Platform } = require('react-native');
-if (!global.process) {
-  global.process = require('process');
-}
-global.process.browser = false;
-global.process.version  = global.process.version || 'v16.0.0';
+console.log('[Polyfills] Requiring process...');
+const proc = require('process');
+if (!global.process) global.process = proc;
+global.process.browser  = false;
+global.process.version  = global.process.version  || 'v16.0.0';
 global.process.versions = global.process.versions || {};
+console.log('[Polyfills] process OK');
 
-// ── 3. crypto.getRandomValues — AFTER Buffer so crypto-browserify can use it
+// ── 3. react-native (for Platform) ───────────────────────────────────────────
+console.log('[Polyfills] Requiring react-native Platform...');
+const { Platform } = require('react-native');
+console.log('[Polyfills] Platform OK:', Platform.OS);
+
+// ── 4. crypto.getRandomValues ────────────────────────────────────────────────
+console.log('[Polyfills] Requiring react-native-get-random-values...');
 require('react-native-get-random-values');
+console.log('[Polyfills] get-random-values OK');
+
 if (!global.crypto) global.crypto = {};
 if (!global.crypto.getRandomValues) {
-  // Fallback (already patched above, this is just safety)
   global.crypto.getRandomValues = function (typedArray) {
     for (let i = 0; i < typedArray.length; i++) {
       typedArray[i] = Math.floor(Math.random() * 256);
@@ -30,8 +38,9 @@ if (!global.crypto.getRandomValues) {
     return typedArray;
   };
 }
+console.log('[Polyfills] crypto.getRandomValues OK');
 
-// ── 4. localStorage shim — gramjs caches TL schema here ─────────────────────
+// ── 5. localStorage shim ──────────────────────────────────────────────────────
 if (typeof global.localStorage === 'undefined') {
   const _store = {};
   global.localStorage = {
@@ -43,10 +52,13 @@ if (typeof global.localStorage === 'undefined') {
     key:        (i)    => Object.keys(_store)[i] || null,
   };
 }
+console.log('[Polyfills] localStorage OK');
 
-// ── 5. Web globals (web only) ────────────────────────────────────────────────
+// ── 6. Web globals ────────────────────────────────────────────────────────────
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
   window.Buffer  = window.Buffer  || Buffer;
   window.process = window.process || global.process;
   window.global  = window.global  || window;
 }
+
+console.log('[Polyfills] All done!');
