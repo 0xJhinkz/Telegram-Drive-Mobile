@@ -1,6 +1,6 @@
 // index.js - Entry point
-// Load polyfills FIRST before anything else
-import './polyfills';
+// require() is synchronous — polyfills are fully set up before expo/AppEntry loads
+require('./polyfills');
 
-// Then load Expo's proper app registration
+// Register the app
 import 'expo/AppEntry';

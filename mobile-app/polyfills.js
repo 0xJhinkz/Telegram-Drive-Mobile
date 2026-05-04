@@ -1,19 +1,28 @@
 /**
- * polyfills.js - Must be the VERY FIRST import in index.js
- * Sets up all Node.js globals synchronously before gramjs loads.
+ * polyfills.js
+ * Uses require() NOT import — require is synchronous and sequential.
+ * With ES import, all statements are hoisted, so global.Buffer = Buffer
+ * runs AFTER every imported module has already evaluated — too late for gramjs.
  */
-import { Platform } from 'react-native';
 
-// ── 1. Buffer ───────────────────────────────────────────────────────────────
-import { Buffer } from 'buffer';
+// ── 1. Buffer — MUST be first ────────────────────────────────────────────────
+const { Buffer } = require('buffer');
 global.Buffer = Buffer;
 
-// ── 2. crypto.getRandomValues (needed by gramjs randomBytes) ────────────────
-import 'react-native-get-random-values'; // patches global.crypto natively
+// ── 2. process ───────────────────────────────────────────────────────────────
+const { Platform } = require('react-native');
+if (!global.process) {
+  global.process = require('process');
+}
+global.process.browser = false;
+global.process.version  = global.process.version || 'v16.0.0';
+global.process.versions = global.process.versions || {};
 
-// Fallback in case the native patch fails
+// ── 3. crypto.getRandomValues — AFTER Buffer so crypto-browserify can use it
+require('react-native-get-random-values');
 if (!global.crypto) global.crypto = {};
 if (!global.crypto.getRandomValues) {
+  // Fallback (already patched above, this is just safety)
   global.crypto.getRandomValues = function (typedArray) {
     for (let i = 0; i < typedArray.length; i++) {
       typedArray[i] = Math.floor(Math.random() * 256);
@@ -22,21 +31,8 @@ if (!global.crypto.getRandomValues) {
   };
 }
 
-// ── 3. process ──────────────────────────────────────────────────────────────
-if (!global.process) {
-  global.process = {
-    env:      {},
-    version:  '',
-    versions: {},
-    platform: Platform.OS,
-    nextTick: (fn, ...args) => setTimeout(() => fn(...args), 0),
-    browser:  false,
-  };
-}
-
-// ── 4. localStorage shim (gramjs caches TL schema here) ─────────────────────
-// React Native has no localStorage — gramjs calls it without guard
-if (!global.localStorage) {
+// ── 4. localStorage shim — gramjs caches TL schema here ─────────────────────
+if (typeof global.localStorage === 'undefined') {
   const _store = {};
   global.localStorage = {
     getItem:    (k)    => (_store[k] !== undefined ? _store[k] : null),
@@ -48,9 +44,9 @@ if (!global.localStorage) {
   };
 }
 
-// ── 5. global shim (web only) ───────────────────────────────────────────────
+// ── 5. Web globals (web only) ────────────────────────────────────────────────
 if (Platform.OS === 'web' && typeof window !== 'undefined') {
-  window.Buffer = window.Buffer || Buffer;
-  if (!window.process) window.process = global.process;
-  if (!window.global)  window.global  = window;
+  window.Buffer  = window.Buffer  || Buffer;
+  window.process = window.process || global.process;
+  window.global  = window.global  || window;
 }
