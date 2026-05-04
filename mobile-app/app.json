@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "platforms": ["ios", "android", "web"],
     "assetBundlePatterns": ["**/*"],
+    "splash": {
+      "backgroundColor": "#0a0a0a"
+    },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
