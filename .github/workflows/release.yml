@@ -14,6 +14,8 @@ jobs:
   build:
     name: 🔨 Build Android APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Required for softprops/action-gh-release to create releases
 
     steps:
       # ── 1. Notify Discord: Build Started ─────────────────────────────────
