@@ -1,6 +1,0 @@
-fix: use expo-build-properties plugin to correctly set targetSdkVersion 35
-
-Android 15 blocks apps with targetSdkVersion < 24.
-Direct android.targetSdkVersion in app.json is ignored by Expo 49 prebuild.
-Must use expo-build-properties plugin to write correct values into build.gradle.
-Also adds versionCode 2 and Android 13+ media permissions.
