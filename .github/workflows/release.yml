@@ -55,9 +55,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       # ── 4b. Install required SDK components ──────────────────────────────
-      - name: 📲 Install SDK 35 + Build Tools
+      - name: 📲 Install SDK 34 + Build Tools
         run: |
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" --sdk_root=$ANDROID_SDK_ROOT
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_SDK_ROOT
 
       # ── 5. Setup Node.js ──────────────────────────────────────────────────
       - name: 🟢 Setup Node.js 18
