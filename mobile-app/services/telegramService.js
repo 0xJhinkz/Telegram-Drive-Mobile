@@ -2,11 +2,22 @@
  * telegramService.js
  * All Telegram operations — runs gramjs DIRECTLY (no proxy server).
  * Native Android compatible: no browser-only APIs used.
+ *
+ * IMPORTANT: Api and computeCheck are lazy-loaded via require() inside
+ * functions to avoid initializing telegram/gramjs before React Native's
+ * native bridge is ready (which causes "Cannot read property 'slice'" crashes).
  */
 import { Platform } from 'react-native';
-import { Api } from 'telegram';
-import { computeCheck } from 'telegram/Password';
 import { gramClient } from './gramClient';
+
+// Lazy-load to avoid early initialization
+function getApi() {
+  return require('telegram').Api;
+}
+
+function getComputeCheck() {
+  return require('telegram/Password').computeCheck;
+}
 
 const TD_TAG   = ' [TD]';
 const TD_ABOUT = 'Telegram Drive Storage\n[telegram-drive-folder]';
@@ -102,6 +113,7 @@ export async function requestLoginCode(apiId, apiHash, phone) {
 }
 
 export async function signInWithCode(_apiId, _apiHash, _phone, code) {
+  const Api = getApi();
   const client = gramClient.get();
   try {
     await client.invoke(new Api.auth.SignIn({
@@ -119,6 +131,8 @@ export async function signInWithCode(_apiId, _apiHash, _phone, code) {
 }
 
 export async function checkPassword(password) {
+  const Api = getApi();
+  const computeCheck = getComputeCheck();
   const client = gramClient.get();
   const pwInfo = await client.invoke(new Api.account.GetPassword());
   const check  = await computeCheck(pwInfo, password);
@@ -140,6 +154,7 @@ export async function restoreSession() {
 }
 
 export async function logout() {
+  const Api = getApi();
   try { await gramClient.get().invoke(new Api.auth.LogOut()); } catch {}
   await gramClient.clearSession();
 }
@@ -173,6 +188,7 @@ export async function getFolders() {
 }
 
 export async function createFolder(name) {
+  const Api = getApi();
   const client = gramClient.get();
   const result = await client.invoke(new Api.channels.CreateChannel({
     broadcast:  true,
@@ -196,6 +212,7 @@ export async function createFolder(name) {
 }
 
 export async function deleteFolder(folderId) {
+  const Api = getApi();
   const client = gramClient.get();
   const entity = await getEntity(folderId);
   await client.invoke(new Api.channels.DeleteChannel({ channel: entity }));
@@ -221,6 +238,7 @@ export async function deleteFile(messageId, folderId = null) {
 }
 
 export async function moveFiles(messageIds, sourceFolderId, targetFolderId) {
+  const Api = getApi();
   const client       = gramClient.get();
   const sourceEntity = await getEntity(sourceFolderId);
   const targetEntity = await getEntity(targetFolderId);
@@ -245,6 +263,7 @@ export async function searchFiles(query, folderId = null) {
 }
 
 export async function searchGlobal(query) {
+  const Api = getApi();
   const client = gramClient.get();
   try {
     const result = await client.invoke(new Api.messages.SearchGlobal({
