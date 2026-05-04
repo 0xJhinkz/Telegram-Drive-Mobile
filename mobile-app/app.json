@@ -1,25 +1,38 @@
 {
   "expo": {
-    "name": "Telegram Drive Mobile",
+    "name": "Telegram Drive",
     "slug": "telegram-drive-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "platforms": ["ios", "android", "web"],
     "assetBundlePatterns": ["**/*"],
     "splash": {
-      "backgroundColor": "#0a0a0a"
+      "backgroundColor": "#0a0f1e"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
     "android": {
       "package": "com.jhinkz.telegramdrive",
-      "compileSdkVersion": 34,
-      "targetSdkVersion": 34,
-      "buildToolsVersion": "34.0.0"
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0f1e"
+      },
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
+      "buildToolsVersion": "35.0.0",
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "ios": {
-      "bundleIdentifier": "com.jhinkz.telegramdrive"
+      "bundleIdentifier": "com.jhinkz.telegramdrive",
+      "icon": "./assets/icon.png"
     },
     "extra": {
       "eas": {}

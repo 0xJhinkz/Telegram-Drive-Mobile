@@ -1,7 +1,9 @@
 /**
  * telegramService.js
  * All Telegram operations — runs gramjs DIRECTLY (no proxy server).
+ * Native Android compatible: no browser-only APIs used.
  */
+import { Platform } from 'react-native';
 import { Api } from 'telegram';
 import { computeCheck } from 'telegram/Password';
 import { gramClient } from './gramClient';
@@ -107,7 +109,7 @@ export async function signInWithCode(_apiId, _apiHash, _phone, code) {
       phoneCodeHash: gramClient._phoneCodeHash,
       phoneCode:     code,
     }));
-    gramClient.saveSession();
+    await gramClient.saveSession();
     return { success: true };
   } catch (err) {
     const msg = err.message || String(err);
@@ -121,25 +123,25 @@ export async function checkPassword(password) {
   const pwInfo = await client.invoke(new Api.account.GetPassword());
   const check  = await computeCheck(pwInfo, password);
   await client.invoke(new Api.auth.CheckPassword({ password: check }));
-  gramClient.saveSession();
+  await gramClient.saveSession();
   return { success: true };
 }
 
 export async function restoreSession() {
-  const { session, apiId, apiHash } = gramClient.getSaved();
+  const { session, apiId, apiHash } = await gramClient.getSaved();
   if (!session || !apiId || !apiHash) return null;
   try {
     await gramClient.init(apiId, apiHash, session);
     return await getMe();
   } catch {
-    gramClient.clearSession();
+    await gramClient.clearSession();
     return null;
   }
 }
 
 export async function logout() {
   try { await gramClient.get().invoke(new Api.auth.LogOut()); } catch {}
-  gramClient.clearSession();
+  await gramClient.clearSession();
 }
 
 export async function getMe() {
@@ -266,8 +268,23 @@ export async function searchGlobal(query) {
 export async function uploadFile(file, folderId = null, onProgress = null) {
   const client = gramClient.get();
   const entity = await getEntity(folderId);
+
+  let fileToSend = file;
+
+  // Native: expo-document-picker gives { uri, name, mimeType, _isNative }
+  // gramjs sendFile needs a Buffer (with a .name property) on native
+  if (file && file._isNative && file.uri) {
+    const { FileSystem }  = await import('expo-file-system');
+    const base64          = await FileSystem.readAsStringAsync(file.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const bytes           = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    fileToSend            = Buffer.from(bytes);
+    fileToSend.name       = file.name;
+  }
+
   await client.sendFile(entity, {
-    file,
+    file:          fileToSend,
     forceDocument: true,
     workers:       4,
     onProgress:    p => onProgress && onProgress(Math.round(p * 100)),
@@ -285,15 +302,28 @@ export async function downloadFile(messageId, folderId = null, filename = 'file'
   if (!msg?.media) throw new Error('Message not found');
 
   const buffer = await client.downloadMedia(msg.media, { workers: 4 });
-  const blob   = new Blob([buffer]);
-  const url    = URL.createObjectURL(blob);
-  const a      = document.createElement('a');
-  a.href       = url;
-  a.download   = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+  if (Platform.OS === 'web') {
+    // Web: use browser download APIs
+    const blob = new Blob([buffer]);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } else {
+    // Native Android/iOS: write to cache then share
+    const { FileSystem } = await import('expo-file-system');
+    const { shareAsync }  = await import('expo-sharing');
+    const fileUri = FileSystem.cacheDirectory + filename;
+    await FileSystem.writeAsStringAsync(fileUri, buffer.toString('base64'), {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    await shareAsync(fileUri, { mimeType: 'application/octet-stream', dialogTitle: `Save ${filename}` });
+  }
   return true;
 }
 
@@ -325,7 +355,22 @@ export async function getMediaUrl(messageId, folderId = null, mimeType = '', onP
   });
   if (!buffer) return null;
   onProgress?.(100);
-  return URL.createObjectURL(new Blob([buffer], { type: resolvedMime || 'application/octet-stream' }));
+
+  if (Platform.OS === 'web') {
+    return URL.createObjectURL(new Blob([buffer], { type: resolvedMime || 'application/octet-stream' }));
+  }
+  // Native: write buffer to cache file and return local URI
+  try {
+    const { FileSystem } = await import('expo-file-system');
+    const ext     = resolvedMime.split('/')[1] || 'bin';
+    const fileUri = FileSystem.cacheDirectory + `media_${messageId}.${ext}`;
+    await FileSystem.writeAsStringAsync(fileUri, buffer.toString('base64'), {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return fileUri;
+  } catch {
+    return null;
+  }
 }
 
 /** Legacy helper kept for image previews */
@@ -345,21 +390,30 @@ export async function getThumbnailUrl(messageId, folderId = null) {
   const msg      = messages?.[0];
   if (!msg?.media) return null;
 
+  const _bufToUri = async (buffer, mime) => {
+    if (!buffer || buffer.length === 0) return null;
+    if (Platform.OS === 'web') {
+      return URL.createObjectURL(new Blob([buffer], { type: mime }));
+    }
+    // Native: cache to disk
+    const { FileSystem } = await import('expo-file-system');
+    const fileUri = FileSystem.cacheDirectory + `thumb_${messageId}.jpg`;
+    await FileSystem.writeAsStringAsync(fileUri, buffer.toString('base64'), {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return fileUri;
+  };
+
   try {
     // thumb: 0 → smallest available size (fastest to download)
     const buffer = await client.downloadMedia(msg.media, { thumb: 0, workers: 1 });
-    if (!buffer || buffer.length === 0) return null;
-
-    const mime = msg.media.photo
-      ? 'image/jpeg'
-      : (msg.media.document?.mimeType || 'image/jpeg');
-    return URL.createObjectURL(new Blob([buffer], { type: mime }));
+    const mime   = msg.media.photo ? 'image/jpeg' : (msg.media.document?.mimeType || 'image/jpeg');
+    return await _bufToUri(buffer, mime);
   } catch {
     // thumb not available — fall back to full download (small images only)
     try {
       const buffer = await client.downloadMedia(msg.media, { workers: 1 });
-      if (!buffer) return null;
-      return URL.createObjectURL(new Blob([buffer], { type: 'image/jpeg' }));
+      return await _bufToUri(buffer, 'image/jpeg');
     } catch {
       return null;
     }

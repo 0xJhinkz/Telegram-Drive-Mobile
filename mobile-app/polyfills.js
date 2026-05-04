@@ -1,8 +1,9 @@
 /**
  * polyfills.js
  * Must be imported FIRST (see index.js).
- * Provides Node.js globals for gramjs running directly in the browser.
+ * Provides Node.js globals for gramjs running in React Native + web.
  */
+import { Platform } from 'react-native';
 
 // Crypto random values (required by gramjs for key generation)
 import 'react-native-get-random-values';
@@ -12,7 +13,8 @@ import { Buffer } from 'buffer';
 if (typeof global !== 'undefined') {
   global.Buffer = global.Buffer || Buffer;
 }
-if (typeof window !== 'undefined') {
+// Only touch window on web — it doesn't exist on native Android
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
   window.Buffer = window.Buffer || Buffer;
 }
 
@@ -22,12 +24,12 @@ if (typeof global !== 'undefined' && !global.process) {
     env:      {},
     version:  '',
     versions: {},
-    platform: 'browser',
+    platform: Platform.OS,
     nextTick: (fn, ...args) => setTimeout(() => fn(...args), 0),
-    browser:  true,
+    browser:  Platform.OS === 'web',
   };
 }
-if (typeof window !== 'undefined' && !window.process) {
+if (Platform.OS === 'web' && typeof window !== 'undefined' && !window.process) {
   window.process = global.process || {
     env:      {},
     version:  '',
@@ -38,7 +40,7 @@ if (typeof window !== 'undefined' && !window.process) {
   };
 }
 
-// global shim
-if (typeof window !== 'undefined' && typeof window.global === 'undefined') {
+// global shim (web only)
+if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof window.global === 'undefined') {
   window.global = window;
 }

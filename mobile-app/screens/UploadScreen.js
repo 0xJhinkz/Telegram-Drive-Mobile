@@ -6,22 +6,46 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { uploadFile } from '../services/telegramService';
 
-function pickFiles() {
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type  = 'file';
-    input.multiple = true;
-    input.onchange = (e) => resolve(Array.from(e.target.files || []));
-    input.click();
+// ─── File picker: native uses expo-document-picker, web uses <input> ──────────
+async function pickFiles() {
+  if (Platform.OS === 'web') {
+    // Web fallback — browser file input
+    return new Promise((resolve) => {
+      const input    = document.createElement('input');
+      input.type     = 'file';
+      input.multiple = true;
+      input.onchange = (e) => resolve(Array.from(e.target.files || []));
+      input.click();
+    });
+  }
+
+  // Native Android / iOS — expo-document-picker
+  const { getDocumentAsync } = await import('expo-document-picker');
+  const result = await getDocumentAsync({
+    type:     '*/*',
+    multiple: true,
+    copyToCacheDirectory: true,
   });
+
+  if (result.canceled) return [];
+
+  // result.assets is an array of { uri, name, size, mimeType }
+  return (result.assets || []).map((asset) => ({
+    uri:      asset.uri,
+    name:     asset.name,
+    size:     asset.size  || 0,
+    mimeType: asset.mimeType || 'application/octet-stream',
+    // gramjs uploadFile on native expects a file-like object with uri
+    _isNative: true,
+  }));
 }
 
 const STATUS_COLOR = { pending: '#718096', uploading: '#4A90E2', done: '#27AE60', error: '#E74C3C' };
 const STATUS_ICON  = { pending: 'time-outline', uploading: 'cloud-upload-outline', done: 'checkmark-circle', error: 'alert-circle' };
 
 export default function UploadScreen({ activeFolderId, folderName, onUploadDone }) {
-  const [queue,    setQueue]    = useState([]);
-  const [running,  setRunning]  = useState(false);
+  const [queue,   setQueue]   = useState([]);
+  const [running, setRunning] = useState(false);
   const uploadRef = useRef(false);
 
   const addFiles = async () => {
@@ -39,7 +63,7 @@ export default function UploadScreen({ activeFolderId, folderName, onUploadDone 
       }));
       setQueue(prev => [...prev, ...newItems]);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      Alert.alert('Error', e.message || 'Could not pick files.');
     }
   };
 
@@ -47,8 +71,6 @@ export default function UploadScreen({ activeFolderId, folderName, onUploadDone 
     if (uploadRef.current || running) return;
     uploadRef.current = true;
     setRunning(true);
-
-    setQueue(prev => prev.map(i => i.status === 'pending' ? { ...i, status: 'pending' } : i));
 
     for (const item of queue.filter(i => i.status === 'pending' || i.status === 'error')) {
       if (!uploadRef.current) break;
@@ -69,10 +91,8 @@ export default function UploadScreen({ activeFolderId, folderName, onUploadDone 
   };
 
   const cancelUpload = () => { uploadRef.current = false; setRunning(false); };
-
-  const removeItem = (id) => setQueue(prev => prev.filter(i => i.id !== id));
-
-  const clearDone = () => setQueue(prev => prev.filter(i => i.status !== 'done'));
+  const removeItem   = (id) => setQueue(prev => prev.filter(i => i.id !== id));
+  const clearDone    = ()   => setQueue(prev => prev.filter(i => i.status !== 'done'));
 
   const pendingCount = queue.filter(i => i.status === 'pending').length;
   const doneCount    = queue.filter(i => i.status === 'done').length;
@@ -85,7 +105,7 @@ export default function UploadScreen({ activeFolderId, folderName, onUploadDone 
         <Text style={styles.destText}>Uploading to: <Text style={styles.destName}>{folderName || 'Saved Messages'}</Text></Text>
       </View>
 
-      {/* Drop zone */}
+      {/* Drop / pick zone */}
       <TouchableOpacity style={styles.dropZone} onPress={addFiles} activeOpacity={0.8}>
         <View style={styles.dropIcon}>
           <Ionicons name="cloud-upload" size={48} color="#4A90E2" />
@@ -111,11 +131,7 @@ export default function UploadScreen({ activeFolderId, folderName, onUploadDone 
             style={styles.list}
             renderItem={({ item }) => (
               <View style={styles.queueRow}>
-                <Ionicons
-                  name={STATUS_ICON[item.status]}
-                  size={22}
-                  color={STATUS_COLOR[item.status]}
-                />
+                <Ionicons name={STATUS_ICON[item.status]} size={22} color={STATUS_COLOR[item.status]} />
                 <View style={styles.queueMeta}>
                   <Text style={styles.queueName} numberOfLines={1}>{item.name}</Text>
                   <View style={styles.progressRow}>
@@ -169,8 +185,8 @@ export default function UploadScreen({ activeFolderId, folderName, onUploadDone 
 function formatBytes(b) {
   if (!b) return '—';
   if (b < 1024)    return `${b} B`;
-  if (b < 1048576) return `${(b/1024).toFixed(1)} KB`;
-  return `${(b/1048576).toFixed(1)} MB`;
+  if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1048576).toFixed(1)} MB`;
 }
 
 const styles = StyleSheet.create({
@@ -213,7 +229,7 @@ const styles = StyleSheet.create({
   queueStatus:  { fontSize: 11, fontWeight: '600' },
   removeBtn:    { padding: 4 },
 
-  actions: { padding: 16, gap: 10, marginTop: 'auto' },
+  actions:       { padding: 16, gap: 10, marginTop: 'auto' },
   uploadBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: '#4A90E2', padding: 16, borderRadius: 14,

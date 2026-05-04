@@ -1,10 +1,11 @@
 /**
  * gramClient.js
- * Singleton TelegramClient that runs gramjs DIRECTLY in the browser.
- * No proxy server needed.
+ * Singleton TelegramClient that runs gramjs DIRECTLY in React Native.
+ * Uses AsyncStorage instead of localStorage for native Android compatibility.
  */
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SESSION_KEY  = 'tg_session';
 const API_ID_KEY   = 'tg_api_id';
@@ -27,7 +28,11 @@ class GramClientManager {
     const session = new StringSession(sessionStr || '');
     this.client   = new TelegramClient(session, parseInt(apiId, 10), apiHash, {
       connectionRetries: 5,
-      useWSS: false,
+      useWSS: true,          // Use WebSockets — works on Android without native TCP
+      deviceModel: 'Android',
+      systemVersion: 'Android 15',
+      appVersion: '1.0.0',
+      langCode: 'en',
     });
     await this.client.connect();
     return this.client;
@@ -43,20 +48,24 @@ class GramClientManager {
     return !!(this.client && this.client.connected);
   }
 
-  /** Persist session to localStorage */
-  saveSession() {
-    const s = this.client?.session?.save?.();
-    if (s) {
-      localStorage.setItem(SESSION_KEY,  s);
-      localStorage.setItem(API_ID_KEY,   String(this._apiId));
-      localStorage.setItem(API_HASH_KEY, this._apiHash);
+  /** Persist session to AsyncStorage (async — fire-and-forget is OK) */
+  async saveSession() {
+    try {
+      const s = this.client?.session?.save?.();
+      if (s) {
+        await AsyncStorage.setItem(SESSION_KEY,  s);
+        await AsyncStorage.setItem(API_ID_KEY,   String(this._apiId));
+        await AsyncStorage.setItem(API_HASH_KEY, this._apiHash);
+      }
+    } catch (e) {
+      console.warn('[gramClient] saveSession error:', e);
     }
   }
 
-  clearSession() {
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(API_ID_KEY);
-    localStorage.removeItem(API_HASH_KEY);
+  async clearSession() {
+    try {
+      await AsyncStorage.multiRemove([SESSION_KEY, API_ID_KEY, API_HASH_KEY]);
+    } catch {}
     this.client         = null;
     this._phone         = null;
     this._phoneCodeHash = null;
@@ -65,12 +74,18 @@ class GramClientManager {
     this._apiHash       = null;
   }
 
-  getSaved() {
-    return {
-      session: localStorage.getItem(SESSION_KEY)  || '',
-      apiId:   localStorage.getItem(API_ID_KEY)   || '',
-      apiHash: localStorage.getItem(API_HASH_KEY) || '',
-    };
+  async getSaved() {
+    try {
+      const values = await AsyncStorage.multiGet([SESSION_KEY, API_ID_KEY, API_HASH_KEY]);
+      const map    = Object.fromEntries(values.map(([k, v]) => [k, v || '']));
+      return {
+        session: map[SESSION_KEY]  || '',
+        apiId:   map[API_ID_KEY]   || '',
+        apiHash: map[API_HASH_KEY] || '',
+      };
+    } catch {
+      return { session: '', apiId: '', apiHash: '' };
+    }
   }
 
   cacheEntity(id, entity) {

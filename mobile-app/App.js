@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, Platform, ActivityIndicator,
+  SafeAreaView, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,6 +18,45 @@ import {
   restoreSession, getFolders, createFolder,
 } from './services/telegramService';
 
+// ── Error Boundary — catches JS crashes and shows a readable screen ────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error('[ErrorBoundary]', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0a0f1e', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <Ionicons name="alert-circle" size={64} color="#E74C3C" />
+          <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', marginTop: 16, marginBottom: 8 }}>
+            Something went wrong
+          </Text>
+          <ScrollView style={{ maxHeight: 200, width: '100%' }}>
+            <Text style={{ color: '#aaa', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>
+              {String(this.state.error)}
+            </Text>
+          </ScrollView>
+          <TouchableOpacity
+            onPress={() => this.setState({ hasError: false, error: null })}
+            style={{ marginTop: 24, backgroundColor: '#4A90E2', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12 }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Retry</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+
 const TABS = [
   { key: 'Files',    icon: 'folder',       iconActive: 'folder',       label: 'Files' },
   { key: 'Upload',   icon: 'cloud-upload-outline', iconActive: 'cloud-upload', label: 'Upload' },
@@ -25,7 +64,16 @@ const TABS = [
   { key: 'Settings', icon: 'settings-outline',     iconActive: 'settings',     label: 'Settings' },
 ];
 
+// Wrap in ErrorBoundary so any crash shows a readable screen instead of blank
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppRoot />
+    </ErrorBoundary>
+  );
+}
+
+function AppRoot() {
   const [tab,             setTab]             = useState('Files');
   const [isAuthed,        setIsAuthed]        = useState(false);
   const [bootstrapping,   setBootstrapping]   = useState(true);
