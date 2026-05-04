@@ -2,7 +2,8 @@
   "name": "telegram-drive-mobile",
   "version": "1.0.0",
   "private": true,
-  "main": "expo/AppEntry",
+  "main": "index.js",
+
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
