@@ -1,99 +1,71 @@
 /**
  * gramClient.js
- * Singleton TelegramClient that runs gramjs DIRECTLY in React Native.
- * Uses AsyncStorage instead of localStorage for native Android compatibility.
+ *
+ * IMPORTANT: gramjs (telegram package) is lazy-loaded via require() inside
+ * each function. Importing it at the top level triggers its module initialization
+ * (including crypto operations) BEFORE React Native's JS bridge is ready,
+ * causing "Cannot read property 'slice' of undefined" crashes on Hermes.
  */
-import { TelegramClient } from 'telegram';
-import { StringSession } from 'telegram/sessions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SESSION_KEY  = 'tg_session';
-const API_ID_KEY   = 'tg_api_id';
-const API_HASH_KEY = 'tg_api_hash';
+const STORAGE_KEY = 'tg_session';
+
+// Lazily resolved gramjs constructors
+let _TelegramClient = null;
+let _StringSession  = null;
+
+function getGramJS() {
+  if (!_TelegramClient) {
+    _TelegramClient = require('telegram').TelegramClient;
+    _StringSession  = require('telegram/sessions').StringSession;
+  }
+  return { TelegramClient: _TelegramClient, StringSession: _StringSession };
+}
 
 class GramClientManager {
   constructor() {
-    this.client         = null;
-    this._phone         = null;
-    this._phoneCodeHash = null;
-    this._entityCache   = {};   // id(string) → entity
-    this._apiId         = null;
-    this._apiHash       = null;
+    this._client = null;
   }
 
-  /** Create and connect a new TelegramClient */
-  async init(apiId, apiHash, sessionStr = '') {
-    this._apiId   = apiId;
-    this._apiHash = apiHash;
-    const session = new StringSession(sessionStr || '');
-    this.client   = new TelegramClient(session, parseInt(apiId, 10), apiHash, {
+  async init(sessionStr = '') {
+    const { TelegramClient, StringSession } = getGramJS();
+
+    const apiId   = parseInt(process.env.EXPO_PUBLIC_API_ID   || '28121035', 10);
+    const apiHash =           process.env.EXPO_PUBLIC_API_HASH || '2d09e6db4e8e7e8c4571aab94ea33a23';
+    const session = new StringSession(sessionStr);
+
+    this._client = new TelegramClient(session, apiId, apiHash, {
       connectionRetries: 5,
-      useWSS: true,          // Use WebSockets — works on Android without native TCP
-      deviceModel: 'Android',
-      systemVersion: 'Android 15',
-      appVersion: '1.0.0',
-      langCode: 'en',
+      useWSS: false,
     });
-    await this.client.connect();
-    return this.client;
+
+    await this._client.connect();
+    return this._client;
   }
 
-  /** Return the active client, or throw */
   get() {
-    if (!this.client) throw new Error('Not connected. Please log in.');
-    return this.client;
+    if (!this._client) throw new Error('Telegram client not initialized');
+    return this._client;
   }
 
-  isConnected() {
-    return !!(this.client && this.client.connected);
-  }
-
-  /** Persist session to AsyncStorage (async — fire-and-forget is OK) */
-  async saveSession() {
-    try {
-      const s = this.client?.session?.save?.();
-      if (s) {
-        await AsyncStorage.setItem(SESSION_KEY,  s);
-        await AsyncStorage.setItem(API_ID_KEY,   String(this._apiId));
-        await AsyncStorage.setItem(API_HASH_KEY, this._apiHash);
-      }
-    } catch (e) {
-      console.warn('[gramClient] saveSession error:', e);
+  async disconnect() {
+    if (this._client) {
+      await this._client.disconnect();
+      this._client = null;
     }
   }
 
-  async clearSession() {
-    try {
-      await AsyncStorage.multiRemove([SESSION_KEY, API_ID_KEY, API_HASH_KEY]);
-    } catch {}
-    this.client         = null;
-    this._phone         = null;
-    this._phoneCodeHash = null;
-    this._entityCache   = {};
-    this._apiId         = null;
-    this._apiHash       = null;
+  async saveSession(session) {
+    await AsyncStorage.setItem(STORAGE_KEY, session);
   }
 
   async getSaved() {
-    try {
-      const values = await AsyncStorage.multiGet([SESSION_KEY, API_ID_KEY, API_HASH_KEY]);
-      const map    = Object.fromEntries(values.map(([k, v]) => [k, v || '']));
-      return {
-        session: map[SESSION_KEY]  || '',
-        apiId:   map[API_ID_KEY]   || '',
-        apiHash: map[API_HASH_KEY] || '',
-      };
-    } catch {
-      return { session: '', apiId: '', apiHash: '' };
-    }
+    return await AsyncStorage.getItem(STORAGE_KEY);
   }
 
-  cacheEntity(id, entity) {
-    if (id) this._entityCache[String(id)] = entity;
-  }
-
-  getCachedEntity(id) {
-    return this._entityCache[String(id)] || null;
+  async clearSession() {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    await this.disconnect();
   }
 }
 
