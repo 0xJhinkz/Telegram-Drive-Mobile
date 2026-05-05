@@ -7,9 +7,6 @@
     "icon": "./assets/icon.png",
     "platforms": ["ios", "android", "web"],
     "assetBundlePatterns": ["**/*"],
-    "splash": {
-      "backgroundColor": "#0a0f1e"
-    },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
