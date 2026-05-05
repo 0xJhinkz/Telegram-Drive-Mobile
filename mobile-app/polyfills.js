@@ -1,5 +1,5 @@
 /**
- * polyfills.js - DEBUG VERSION
+ * polyfills.js
  * Console logs will appear in ADB logcat (tag: ReactNativeJS)
  */
 console.log('[Polyfills] Starting...');
@@ -25,18 +25,20 @@ const { Platform } = require('react-native');
 console.log('[Polyfills] Platform OK:', Platform.OS);
 
 // ── 4. crypto.getRandomValues ────────────────────────────────────────────────
+// react-native-get-random-values provides a CSPRNG implementation.
+// If this import fails, we intentionally let it crash — falling back to
+// Math.random() would silently produce predictable values used for
+// MTProto encryption keys, which is a critical security risk.
 console.log('[Polyfills] Requiring react-native-get-random-values...');
 require('react-native-get-random-values');
 console.log('[Polyfills] get-random-values OK');
 
 if (!global.crypto) global.crypto = {};
 if (!global.crypto.getRandomValues) {
-  global.crypto.getRandomValues = function (typedArray) {
-    for (let i = 0; i < typedArray.length; i++) {
-      typedArray[i] = Math.floor(Math.random() * 256);
-    }
-    return typedArray;
-  };
+  throw new Error(
+    '[Polyfills] FATAL: crypto.getRandomValues is not available after loading ' +
+    'react-native-get-random-values. Cannot initialize securely.'
+  );
 }
 console.log('[Polyfills] crypto.getRandomValues OK');
 

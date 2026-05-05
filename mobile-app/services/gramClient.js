@@ -25,16 +25,18 @@ function getGramJS() {
 class GramClientManager {
   constructor() {
     this._client = null;
+    this._entityCache = {};
   }
 
-  async init(sessionStr = '') {
+  async init(apiId, apiHash, sessionStr = '') {
+    if (!apiId || !apiHash) {
+      throw new Error('apiId and apiHash are required to initialize the Telegram client.');
+    }
     const { TelegramClient, StringSession } = getGramJS();
 
-    const apiId   = parseInt(process.env.EXPO_PUBLIC_API_ID   || '28121035', 10);
-    const apiHash =           process.env.EXPO_PUBLIC_API_HASH || '2d09e6db4e8e7e8c4571aab94ea33a23';
     const session = new StringSession(sessionStr);
 
-    this._client = new TelegramClient(session, apiId, apiHash, {
+    this._client = new TelegramClient(session, parseInt(apiId, 10), apiHash, {
       connectionRetries: 5,
       useWSS: false,
     });
@@ -48,24 +50,49 @@ class GramClientManager {
     return this._client;
   }
 
+  // ── Entity cache ─────────────────────────────────────────────────────────
+  cacheEntity(id, entity) {
+    this._entityCache[id] = entity;
+  }
+
+  getCachedEntity(id) {
+    return this._entityCache[id] || null;
+  }
+
+  // ── Session persistence ──────────────────────────────────────────────────
+  async saveSession() {
+    if (!this._client) return;
+    const sessionStr = this._client.session.save();
+    const data = JSON.stringify({
+      session: sessionStr,
+      apiId:   this._apiId,
+      apiHash: this._apiHash,
+    });
+    await AsyncStorage.setItem(STORAGE_KEY, data);
+  }
+
+  async getSaved() {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!raw) return { session: null, apiId: null, apiHash: null };
+    try {
+      return JSON.parse(raw);
+    } catch {
+      // Legacy format: raw session string with no apiId/apiHash
+      return { session: null, apiId: null, apiHash: null };
+    }
+  }
+
+  async clearSession() {
+    this._entityCache = {};
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    await this.disconnect();
+  }
+
   async disconnect() {
     if (this._client) {
       await this._client.disconnect();
       this._client = null;
     }
-  }
-
-  async saveSession(session) {
-    await AsyncStorage.setItem(STORAGE_KEY, session);
-  }
-
-  async getSaved() {
-    return await AsyncStorage.getItem(STORAGE_KEY);
-  }
-
-  async clearSession() {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    await this.disconnect();
   }
 }
 

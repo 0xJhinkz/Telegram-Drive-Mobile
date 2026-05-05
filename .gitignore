@@ -12,9 +12,17 @@ dist/
 # Editors
 .vscode/
 .idea/
+.vs/
 
 # Misc
 CompiledApps/
 *.log
 Error.html
 **/LatestError.html
+
+# Binaries & build artifacts
+*.apk
+platform-tools-adb/
+
+# Environment files
+.env.*
