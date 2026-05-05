@@ -60,15 +60,20 @@ jobs:
           sdkmanager --install "platforms;android-35" "build-tools;35.0.0" --sdk_root=$ANDROID_SDK_ROOT
 
       # ── 5. Setup Node.js ──────────────────────────────────────────────────
-      - name: 🟢 Setup Node.js 20
+      - name: 🟢 Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       # ── 6. Install JS dependencies ────────────────────────────────────────
       - name: 📦 Install Dependencies
         working-directory: mobile-app
-        run: npm install
+        run: npm install --legacy-peer-deps
+
+      # ── 6b. Align Expo package versions ──────────────────────────────────
+      - name: 🔧 Fix Expo SDK version alignment
+        working-directory: mobile-app
+        run: npx expo install --fix
 
       # ── 7. Expo Prebuild — generates native Android project ───────────────
       - name: ⚙️ Expo Prebuild (generate Android native code)
