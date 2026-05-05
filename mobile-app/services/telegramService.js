@@ -105,8 +105,8 @@ async function getEntity(folderId) {
 export async function requestLoginCode(apiId, apiHash, phone) {
   await gramClient.init(apiId, apiHash);
   const client = gramClient.get();
-  gramClient._phone = phone;
-  gramClient._apiId  = apiId;
+  gramClient._phone   = phone;
+  gramClient._apiId   = apiId;
   gramClient._apiHash = apiHash;
   const result = await client.sendCode({ apiId: parseInt(apiId, 10), apiHash }, phone);
   gramClient._phoneCodeHash = result.phoneCodeHash;
@@ -145,6 +145,8 @@ export async function restoreSession() {
   const { session, apiId, apiHash } = await gramClient.getSaved();
   if (!session || !apiId || !apiHash) return null;
   try {
+    gramClient._apiId   = apiId;
+    gramClient._apiHash = apiHash;
     await gramClient.init(apiId, apiHash, session);
     return await getMe();
   } catch {

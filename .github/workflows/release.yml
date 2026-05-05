@@ -7,7 +7,8 @@ on:
   workflow_dispatch:   # Allow manual trigger from GitHub Actions UI
 
 env:
-  DISCORD_WEBHOOK: https://discord.com/api/webhooks/1392378414526103593/0cCpbWiPo62o26qLAHZZGJsf0Sjlw0bJATqEJ55xurVcW5fDfS18QtKmU-GXIFkBPfCB
+  # Set DISCORD_WEBHOOK in repo Settings → Secrets and variables → Actions
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   APK_NAME: telegram-drive-${{ github.ref_name }}.apk
 
 jobs:
