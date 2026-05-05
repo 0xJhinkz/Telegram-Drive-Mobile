@@ -73,7 +73,7 @@ jobs:
       # ── 6b. Align Expo package versions ──────────────────────────────────
       - name: 🔧 Fix Expo SDK version alignment
         working-directory: mobile-app
-        run: npx expo install --fix
+        run: npx expo install --fix -- --legacy-peer-deps
 
       # ── 7. Expo Prebuild — generates native Android project ───────────────
       - name: ⚙️ Expo Prebuild (generate Android native code)
@@ -88,6 +88,26 @@ jobs:
         working-directory: mobile-app/android
         run: chmod +x gradlew
 
+      # ── 8b. Patch Kotlin/Compose version compatibility ──────────────────
+      - name: 🔨 Fix Kotlin/Compose version mismatch
+        working-directory: mobile-app/android
+        run: |
+          # expo install --fix may pull Kotlin 1.9.25, but Compose Compiler 1.5.14
+          # requires exactly 1.9.24. Force all Kotlin deps to 1.9.24.
+          cat >> build.gradle << 'PATCH'
+
+          // --- Patched by CI: force Kotlin 1.9.24 for Compose Compiler 1.5.14 compat ---
+          subprojects {
+              configurations.all {
+                  resolutionStrategy.eachDependency { details ->
+                      if (details.requested.group == 'org.jetbrains.kotlin') {
+                          details.useVersion '1.9.24'
+                      }
+                  }
+              }
+          }
+          PATCH
+
       # ── 9. Cache Gradle to speed up future builds ─────────────────────────
       - name: 💾 Cache Gradle
         uses: actions/cache@v4
@@ -101,7 +121,7 @@ jobs:
       # ── 10. Build Release APK ─────────────────────────────────────────────
       - name: 🏗️ Build Release APK
         working-directory: mobile-app/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       # ── 11. Rename & stage APK ────────────────────────────────────────────
       - name: 📋 Rename APK
