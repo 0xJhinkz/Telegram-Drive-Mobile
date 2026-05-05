@@ -38,7 +38,7 @@ class GramClientManager {
 
     this._client = new TelegramClient(session, parseInt(apiId, 10), apiHash, {
       connectionRetries: 5,
-      useWSS: false,
+      useWSS: true,
     });
 
     await this._client.connect();
