@@ -92,16 +92,20 @@ jobs:
       - name: 🔨 Fix Kotlin/Compose version mismatch
         working-directory: mobile-app/android
         run: |
-          # expo install --fix may pull Kotlin 1.9.25, but Compose Compiler 1.5.14
-          # requires exactly 1.9.24. Force all Kotlin deps to 1.9.24.
+          # react-native@0.76.9 forces KGP 1.9.25 via its version catalog
+          # (gradle/libs.versions.toml) but expo-modules-core uses Compose
+          # Compiler 1.5.14 which requires exact 1.9.24.
+          # Since 1.9.25 is binary compatible, suppress the strict version check.
           cat >> build.gradle << 'PATCH'
 
-          // --- Patched by CI: force Kotlin 1.9.24 for Compose Compiler 1.5.14 compat ---
-          subprojects {
-              configurations.all {
-                  resolutionStrategy.eachDependency { details ->
-                      if (details.requested.group == 'org.jetbrains.kotlin') {
-                          details.useVersion '1.9.24'
+          gradle.projectsEvaluated {
+              subprojects {
+                  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                      compilerOptions {
+                          freeCompilerArgs.addAll([
+                              "-P",
+                              "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=1.9.25"
+                          ])
                       }
                   }
               }
