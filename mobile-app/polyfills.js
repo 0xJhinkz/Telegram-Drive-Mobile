@@ -24,14 +24,21 @@ console.log('[Polyfills] Requiring react-native Platform...');
 const { Platform } = require('react-native');
 console.log('[Polyfills] Platform OK:', Platform.OS);
 
-// ── 4. crypto.getRandomValues ────────────────────────────────────────────────
-// react-native-get-random-values provides a CSPRNG implementation.
-// If this import fails, we intentionally let it crash — falling back to
-// Math.random() would silently produce predictable values used for
-// MTProto encryption keys, which is a critical security risk.
+// ── 4. crypto (getRandomValues + subtle) ─────────────────────────────────────
+// GramJS's MTProto crypto layer (telegram/crypto/crypto.js) uses:
+//   - crypto.getRandomValues() for nonce generation
+//   - self.crypto.subtle.digest() for SHA-1/SHA-256 hashing
+//   - crypto.subtle.importKey() + deriveBits() for PBKDF2
+// React Native / Hermes has NONE of these. We need both:
+//   1. react-native-get-random-values → crypto.getRandomValues
+//   2. react-native-quick-crypto → crypto.subtle (Web Crypto API via C++/JSI)
 console.log('[Polyfills] Requiring react-native-get-random-values...');
 require('react-native-get-random-values');
 console.log('[Polyfills] get-random-values OK');
+
+console.log('[Polyfills] Requiring react-native-quick-crypto...');
+const QuickCrypto = require('react-native-quick-crypto');
+console.log('[Polyfills] quick-crypto loaded');
 
 if (!global.crypto) global.crypto = {};
 if (!global.crypto.getRandomValues) {
@@ -40,7 +47,17 @@ if (!global.crypto.getRandomValues) {
     'react-native-get-random-values. Cannot initialize securely.'
   );
 }
-console.log('[Polyfills] crypto.getRandomValues OK');
+
+// Install crypto.subtle from react-native-quick-crypto
+// This is critical — GramJS calls self.crypto.subtle.digest() during
+// the MTProto handshake which runs on every sendCode/signIn call.
+if (!global.crypto.subtle && QuickCrypto.subtle) {
+  global.crypto.subtle = QuickCrypto.subtle;
+  console.log('[Polyfills] crypto.subtle installed from quick-crypto');
+} else if (!global.crypto.subtle) {
+  console.warn('[Polyfills] WARNING: crypto.subtle not available — GramJS MTProto will fail');
+}
+console.log('[Polyfills] crypto OK (getRandomValues + subtle)');
 
 // ── 5. localStorage shim ──────────────────────────────────────────────────────
 if (typeof global.localStorage === 'undefined') {
