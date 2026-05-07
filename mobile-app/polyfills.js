@@ -31,14 +31,10 @@ console.log('[Polyfills] Platform OK:', Platform.OS);
 //   - crypto.subtle.importKey() + deriveBits() for PBKDF2
 // React Native / Hermes has NONE of these. We need both:
 //   1. react-native-get-random-values → crypto.getRandomValues
-//   2. react-native-quick-crypto → crypto.subtle (Web Crypto API via C++/JSI)
+//   2. subtleCryptoShim.js → minimal crypto.subtle using crypto-browserify
 console.log('[Polyfills] Requiring react-native-get-random-values...');
 require('react-native-get-random-values');
 console.log('[Polyfills] get-random-values OK');
-
-console.log('[Polyfills] Requiring react-native-quick-crypto...');
-const QuickCrypto = require('react-native-quick-crypto');
-console.log('[Polyfills] quick-crypto loaded');
 
 if (!global.crypto) global.crypto = {};
 if (!global.crypto.getRandomValues) {
@@ -48,15 +44,12 @@ if (!global.crypto.getRandomValues) {
   );
 }
 
-// Install crypto.subtle from react-native-quick-crypto
-// This is critical — GramJS calls self.crypto.subtle.digest() during
-// the MTProto handshake which runs on every sendCode/signIn call.
-if (!global.crypto.subtle && QuickCrypto.subtle) {
-  global.crypto.subtle = QuickCrypto.subtle;
-  console.log('[Polyfills] crypto.subtle installed from quick-crypto');
-} else if (!global.crypto.subtle) {
-  console.warn('[Polyfills] WARNING: crypto.subtle not available — GramJS MTProto will fail');
-}
+// Install crypto.subtle shim (pure JS, no native deps)
+// Only implements digest/importKey/deriveBits — the 3 methods GramJS uses.
+console.log('[Polyfills] Installing crypto.subtle shim...');
+const { subtle } = require('./subtleCryptoShim');
+global.crypto.subtle = subtle;
+console.log('[Polyfills] crypto.subtle installed OK');
 console.log('[Polyfills] crypto OK (getRandomValues + subtle)');
 
 // ── 5. localStorage shim ──────────────────────────────────────────────────────
