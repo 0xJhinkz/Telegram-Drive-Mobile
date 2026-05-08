@@ -24,14 +24,11 @@ console.log('[Polyfills] Requiring react-native Platform...');
 const { Platform } = require('react-native');
 console.log('[Polyfills] Platform OK:', Platform.OS);
 
-// ── 4. crypto (getRandomValues + subtle) ─────────────────────────────────────
-// GramJS's MTProto crypto layer (telegram/crypto/crypto.js) uses:
-//   - crypto.getRandomValues() for nonce generation
-//   - self.crypto.subtle.digest() for SHA-1/SHA-256 hashing
-//   - crypto.subtle.importKey() + deriveBits() for PBKDF2
-// React Native / Hermes has NONE of these. We need both:
-//   1. react-native-get-random-values → crypto.getRandomValues
-//   2. subtleCryptoShim.js → minimal crypto.subtle using crypto-browserify
+// ── 4. crypto.getRandomValues ────────────────────────────────────────────────
+// GramJS uses bare `crypto.getRandomValues()` for nonce generation.
+// The Web Crypto API (crypto.subtle) is NO LONGER polyfilled here —
+// instead, metro.config.js redirects telegram/crypto/crypto.js to our
+// patched version (patches/gramjs-crypto.js) that uses crypto-browserify.
 console.log('[Polyfills] Requiring react-native-get-random-values...');
 require('react-native-get-random-values');
 console.log('[Polyfills] get-random-values OK');
@@ -43,14 +40,7 @@ if (!global.crypto.getRandomValues) {
     'react-native-get-random-values. Cannot initialize securely.'
   );
 }
-
-// Install crypto.subtle shim (pure JS, no native deps)
-// Only implements digest/importKey/deriveBits — the 3 methods GramJS uses.
-console.log('[Polyfills] Installing crypto.subtle shim...');
-const { subtle } = require('./subtleCryptoShim');
-global.crypto.subtle = subtle;
-console.log('[Polyfills] crypto.subtle installed OK');
-console.log('[Polyfills] crypto OK (getRandomValues + subtle)');
+console.log('[Polyfills] crypto.getRandomValues OK');
 
 // ── 5. localStorage shim ──────────────────────────────────────────────────────
 if (typeof global.localStorage === 'undefined') {
