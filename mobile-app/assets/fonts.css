@@ -1,0 +1,151 @@
+@font-face {
+  font-family: anticon;
+  src: url('/fonts/AntDesign.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: entypo;
+  src: url('/fonts/Entypo.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: evilicons;
+  src: url('/fonts/EvilIcons.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: feather;
+  src: url('/fonts/Feather.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: FontAwesome;
+  src: url('/fonts/FontAwesome.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: FontAwesome5Free-Brand;
+  src: url('/fonts/FontAwesome5_Brands.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: FontAwesome5Free-Regular;
+  src: url('/fonts/FontAwesome5_Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: FontAwesome5Free-Solid;
+  src: url('/fonts/FontAwesome5_Solid.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: FontAwesome6Brands-Regular;
+  src: url('/fonts/FontAwesome6_Brands.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: FontAwesome6Free-Regular;
+  src: url('/fonts/FontAwesome6_Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: FontAwesome6Free-Solid;
+  src: url('/fonts/FontAwesome6_Solid.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Fontisto;
+  src: url('/fonts/Fontisto.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: foundation;
+  src: url('/fonts/Foundation.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: ionicons;
+  src: url('/fonts/Ionicons.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: material-community;
+  src: url('/fonts/MaterialCommunityIcons.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: material;
+  src: url('/fonts/MaterialIcons.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: octicons;
+  src: url('/fonts/Octicons.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: simple-line-icons;
+  src: url('/fonts/SimpleLineIcons.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: zocial;
+  src: url('/fonts/Zocial.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
