@@ -319,6 +319,13 @@ export async function uploadFile(file, folderId = null, onProgress = null) {
     fileToSend.name       = file.name;
   }
 
+  // Web: browser File object needs to be converted to Buffer
+  if (Platform.OS === 'web' && file instanceof File) {
+    const arrayBuffer = await file.arrayBuffer();
+    fileToSend        = Buffer.from(arrayBuffer);
+    fileToSend.name   = file.name;
+  }
+
   await client.sendFile(entity, {
     file:          fileToSend,
     forceDocument: true,
