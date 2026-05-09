@@ -7,13 +7,14 @@ module.exports = async function (env, argv) {
 
   // Inject polyfills as first entry points
   if (config.entry) {
+    const fontsCssPath = path.resolve(__dirname, 'assets/fonts.css');
     const polyfillPath = path.resolve(__dirname, 'polyfills.js');
     if (Array.isArray(config.entry)) {
-      config.entry.unshift(polyfillPath);
+      config.entry.unshift(fontsCssPath, polyfillPath);
     } else if (typeof config.entry === 'object') {
       const firstKey = Object.keys(config.entry)[0];
       if (Array.isArray(config.entry[firstKey])) {
-        config.entry[firstKey].unshift(polyfillPath);
+        config.entry[firstKey].unshift(fontsCssPath, polyfillPath);
       }
     }
   }
