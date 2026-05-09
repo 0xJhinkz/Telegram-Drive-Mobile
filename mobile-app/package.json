@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "postinstall": "node ./scripts/copy-vector-fonts.js",
     "server": "node server/index.js"
   },
   "dependencies": {
