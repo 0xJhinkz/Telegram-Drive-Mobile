@@ -1,20 +1,23 @@
 const createExpoWebpackConfigAsync = require('@expo/webpack-config');
 const webpack = require('webpack');
 const path = require('path');
+const fs = require('fs');
 
 module.exports = async function (env, argv) {
   const config = await createExpoWebpackConfigAsync(env, argv);
 
-  // Inject polyfills as first entry points
+  // Use index.web.js as the entry point if it exists
+  const indexWebPath = path.resolve(__dirname, 'index.web.js');
+  const indexPath = path.resolve(__dirname, 'index.js');
+  const entryPath = fs.existsSync(indexWebPath) ? indexWebPath : indexPath;
+
   if (config.entry) {
-    const fontsCssPath = path.resolve(__dirname, 'assets/fonts.css');
-    const polyfillPath = path.resolve(__dirname, 'polyfills.js');
     if (Array.isArray(config.entry)) {
-      config.entry.unshift(fontsCssPath, polyfillPath);
+      config.entry[0] = entryPath;
     } else if (typeof config.entry === 'object') {
       const firstKey = Object.keys(config.entry)[0];
       if (Array.isArray(config.entry[firstKey])) {
-        config.entry[firstKey].unshift(fontsCssPath, polyfillPath);
+        config.entry[firstKey][0] = entryPath;
       }
     }
   }
