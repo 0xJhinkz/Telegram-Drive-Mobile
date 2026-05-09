@@ -1,0 +1,8 @@
+# Cloudflare Pages SPA fallback
+# Serve index.html for all non-file routes (SPA support)
+/* /index.html 200
+
+# Ensure static assets are served directly (not redirected to SPA)
+/assets/* /assets/* 200
+/fonts/* /fonts/* 200
+/_expo/* /_expo/* 200

@@ -1,5 +1,5 @@
 @font-face {
-  font-family: 'AntDesign';
+  font-family: anticon;
   src: url('/fonts/AntDesign.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -7,7 +7,7 @@
 }
 
 @font-face {
-  font-family: 'Entypo';
+  font-family: entypo;
   src: url('/fonts/Entypo.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -15,7 +15,7 @@
 }
 
 @font-face {
-  font-family: 'EvilIcons';
+  font-family: evilicons;
   src: url('/fonts/EvilIcons.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -23,7 +23,7 @@
 }
 
 @font-face {
-  font-family: 'Feather';
+  font-family: feather;
   src: url('/fonts/Feather.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -31,7 +31,7 @@
 }
 
 @font-face {
-  font-family: 'FontAwesome';
+  font-family: FontAwesome;
   src: url('/fonts/FontAwesome.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -39,7 +39,7 @@
 }
 
 @font-face {
-  font-family: 'FontAwesome5_Brands';
+  font-family: FontAwesome5Free-Brand;
   src: url('/fonts/FontAwesome5_Brands.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -47,7 +47,7 @@
 }
 
 @font-face {
-  font-family: 'FontAwesome5_Regular';
+  font-family: FontAwesome5Free-Regular;
   src: url('/fonts/FontAwesome5_Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -55,7 +55,7 @@
 }
 
 @font-face {
-  font-family: 'FontAwesome5_Solid';
+  font-family: FontAwesome5Free-Solid;
   src: url('/fonts/FontAwesome5_Solid.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -63,7 +63,7 @@
 }
 
 @font-face {
-  font-family: 'FontAwesome6_Brands';
+  font-family: FontAwesome6Brands-Regular;
   src: url('/fonts/FontAwesome6_Brands.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -71,7 +71,7 @@
 }
 
 @font-face {
-  font-family: 'FontAwesome6_Regular';
+  font-family: FontAwesome6Free-Regular;
   src: url('/fonts/FontAwesome6_Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -79,7 +79,7 @@
 }
 
 @font-face {
-  font-family: 'FontAwesome6_Solid';
+  font-family: FontAwesome6Free-Solid;
   src: url('/fonts/FontAwesome6_Solid.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -87,7 +87,7 @@
 }
 
 @font-face {
-  font-family: 'Fontisto';
+  font-family: Fontisto;
   src: url('/fonts/Fontisto.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -95,7 +95,7 @@
 }
 
 @font-face {
-  font-family: 'Foundation';
+  font-family: foundation;
   src: url('/fonts/Foundation.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -103,7 +103,7 @@
 }
 
 @font-face {
-  font-family: 'Ionicons';
+  font-family: ionicons;
   src: url('/fonts/Ionicons.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -111,7 +111,7 @@
 }
 
 @font-face {
-  font-family: 'MaterialCommunityIcons';
+  font-family: material-community;
   src: url('/fonts/MaterialCommunityIcons.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -119,7 +119,7 @@
 }
 
 @font-face {
-  font-family: 'MaterialIcons';
+  font-family: material;
   src: url('/fonts/MaterialIcons.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -127,7 +127,7 @@
 }
 
 @font-face {
-  font-family: 'Octicons';
+  font-family: octicons;
   src: url('/fonts/Octicons.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -135,7 +135,7 @@
 }
 
 @font-face {
-  font-family: 'SimpleLineIcons';
+  font-family: simple-line-icons;
   src: url('/fonts/SimpleLineIcons.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
@@ -143,7 +143,7 @@
 }
 
 @font-face {
-  font-family: 'Zocial';
+  font-family: zocial;
   src: url('/fonts/Zocial.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
